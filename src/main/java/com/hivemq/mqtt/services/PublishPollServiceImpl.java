@@ -84,6 +84,8 @@ public class PublishPollServiceImpl implements PublishPollService {
     private final MessageDroppedService messageDroppedService;
     @NotNull
     private final SharedSubscriptionService sharedSubscriptionService;
+    @NotNull
+    private final SingleWriterService singleWriterService;
 
     @Inject
     public PublishPollServiceImpl(@NotNull final MessageIDPools messageIDPools,
@@ -99,6 +101,7 @@ public class PublishPollServiceImpl implements PublishPollService {
         this.payloadPersistence = payloadPersistence;
         this.messageDroppedService = messageDroppedService;
         this.sharedSubscriptionService = sharedSubscriptionService;
+        this.singleWriterService = singleWriterService;
     }
 
     /**
@@ -201,7 +204,7 @@ public class PublishPollServiceImpl implements PublishPollService {
                 Exceptions.rethrowError("Exception in new messages handling", t);
                 channel.disconnect();
             }
-        }, MoreExecutors.directExecutor());
+        }, singleWriterService.callbackExecutor(client));
     }
 
     /**
@@ -264,7 +267,7 @@ public class PublishPollServiceImpl implements PublishPollService {
             public void onFailure(final Throwable t) {
                 Exceptions.rethrowError("Exception in inflight messages handling", t);
             }
-        }, MoreExecutors.directExecutor());
+        }, singleWriterService.callbackExecutor(client));
     }
 
     private AtomicInteger inFlightMessageCount(@NotNull final Channel channel) {
@@ -364,7 +367,7 @@ public class PublishPollServiceImpl implements PublishPollService {
                 Exceptions.rethrowError("Exception in shared publishes poll handling for client " + client +
                         "for shared subscription " + sharedSubscription, t);
             }
-        }, MoreExecutors.directExecutor());
+        }, singleWriterService.callbackExecutor(client));
     }
 
     private void sendOutPublish(PUBLISH publish, final boolean shared, @NotNull final Channel channel, @NotNull final String queueId,
@@ -377,7 +380,7 @@ public class PublishPollServiceImpl implements PublishPollService {
         final SettableFuture<PublishStatus> publishFuture = SettableFuture.create();
 
         Futures.addCallback(publishFuture, new PublishStatusFutureCallback(payloadPersistence,
-                this, shared, queueId, publish, messageIDPool, channel, client), MoreExecutors.directExecutor());
+                this, shared, queueId, publish, messageIDPool, channel, client), singleWriterService.callbackExecutor(client));
 
         final PublishWithFuture message = new PublishWithFuture(publish, publishFuture, shared, payloadPersistence);
         channel.writeAndFlush(message).addListener(new PublishWriteFailedListener(publishFuture));
