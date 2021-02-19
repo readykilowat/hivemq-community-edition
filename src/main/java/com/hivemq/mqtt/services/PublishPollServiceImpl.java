@@ -84,8 +84,6 @@ public class PublishPollServiceImpl implements PublishPollService {
     private final MessageDroppedService messageDroppedService;
     @NotNull
     private final SharedSubscriptionService sharedSubscriptionService;
-    @NotNull
-    private final SingleWriterService singleWriterService;
 
     @Inject
     public PublishPollServiceImpl(@NotNull final MessageIDPools messageIDPools,
@@ -101,7 +99,6 @@ public class PublishPollServiceImpl implements PublishPollService {
         this.payloadPersistence = payloadPersistence;
         this.messageDroppedService = messageDroppedService;
         this.sharedSubscriptionService = sharedSubscriptionService;
-        this.singleWriterService = singleWriterService;
     }
 
     /**
